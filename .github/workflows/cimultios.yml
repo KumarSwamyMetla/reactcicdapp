@@ -10,24 +10,38 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node-version: [18, 19, 20]
+        # It's good to test different Node.js versions.
+        # Node.js 18 and 20 are LTS (Long Term Support) versions.
+        # Node.js 19 is not LTS and might have more breaking changes for some libraries.
+        # Let's keep 18 and 20 for robust testing.
+        node-version: [18, 20] # Removed 19 for potentially better stability with dependencies.
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          # Optional: Add caching for faster subsequent runs if your repo is large
+          # cache: 'npm'
 
-      - name: npm ci
+      - name: Install dependencies (npm ci)
+        # This is the crucial step for reproducible builds.
+        # It installs all dependencies exactly as defined in package-lock.json.
         run: npm ci
 
-      - name: Install dependencies
-        run: npm install vite@latest
+      # --- REMOVE OR COMMENT OUT THIS SECTION ---
+      # - name: Install latest Vite (potentially problematic)
+      #   # Running 'npm install vite@latest' after 'npm ci' can override versions
+      #   # locked in package-lock.json and introduce unexpected compatibility issues.
+      #   # If you want to test with the latest Vite, update it locally in your project
+      #   # (npm install vite@latest) and commit the updated package.json and package-lock.json.
+      #   run: npm install vite@latest
+      # -----------------------------------------
 
-      - name: Run tests
+      - name: Run tests (if present)
         run: npm test --if-present
 
       - name: Build project
